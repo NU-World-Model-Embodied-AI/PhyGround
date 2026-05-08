@@ -1,30 +1,30 @@
 """Export per-annotator human evaluation scores from the filtered SQLite DB.
 
-Reads /shared/user60/worldmodel/wmbench/evals/human_eval/human_eval_filtered.db
-and writes one JSON file per annotator under
-/shared/user60/workspace/worldmodel/wmbench/public/datasets/annotations/.
+Reads a `human_eval_filtered.db` (path supplied via --db or $PHYGROUND_DB) and
+writes one JSON file per annotator into the dataset's `annotations/` folder.
 
 No personal information is exported: each annotator is identified only by a
-serial id (annotator_001, annotator_002, ...). Names, gender, age,
-major, education and creation timestamps are dropped.
+serial id (annotator_001, annotator_002, ...). Names, gender, age, major,
+education and creation timestamps are dropped.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
-import math
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("/shared/user60/worldmodel/wmbench/evals/human_eval/human_eval_filtered.db")
-OUT_DIR = Path("/shared/user60/workspace/worldmodel/wmbench/public/datasets/annotations")
-PROMPTS_JSON = Path("/shared/user60/workspace/worldmodel/wmbench/public/datasets/prompts/phyground.json")
+REPO_ROOT = Path(__file__).resolve().parent
+DEFAULT_OUT_DIR = REPO_ROOT.parent / "datasets" / "annotations"
+DEFAULT_PROMPTS_JSON = REPO_ROOT.parent / "datasets" / "prompts" / "phyground.json"
 
 
-def load_prompt_id_map() -> dict[str, int]:
-    if not PROMPTS_JSON.exists():
+def load_prompt_id_map(prompts_json: Path) -> dict[str, int]:
+    if not prompts_json.exists():
         return {}
-    data = json.loads(PROMPTS_JSON.read_text())
+    data = json.loads(prompts_json.read_text())
     return {entry["video"]: entry["id"] for entry in data}
 
 
@@ -38,10 +38,24 @@ def parse_json(field: str | None, default):
 
 
 def main() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    prompt_id_map = load_prompt_id_map()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--db",
+        type=Path,
+        default=os.environ.get("PHYGROUND_DB"),
+        help="Path to human_eval_filtered.db (or set $PHYGROUND_DB).",
+    )
+    parser.add_argument("--out_dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument("--prompts_json", type=Path, default=DEFAULT_PROMPTS_JSON)
+    args = parser.parse_args()
 
-    conn = sqlite3.connect(str(DB_PATH))
+    if args.db is None:
+        parser.error("--db is required (or set $PHYGROUND_DB).")
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    prompt_id_map = load_prompt_id_map(args.prompts_json)
+
+    conn = sqlite3.connect(str(args.db))
     conn.row_factory = sqlite3.Row
 
     annotator_ids = [
@@ -96,13 +110,13 @@ def main() -> None:
             "num_annotations": len(items),
             "annotations": items,
         }
-        (OUT_DIR / f"{serial_id}.json").write_text(
+        (args.out_dir / f"{serial_id}.json").write_text(
             json.dumps(payload, ensure_ascii=False, indent=2)
         )
         manifest.append({"annotator_id": serial_id, "num_annotations": len(items)})
 
     manifest.sort(key=lambda x: x["annotator_id"])
-    (OUT_DIR / "manifest.json").write_text(
+    (args.out_dir / "manifest.json").write_text(
         json.dumps(
             {"num_annotators": len(manifest), "annotators": manifest},
             ensure_ascii=False,
@@ -110,7 +124,7 @@ def main() -> None:
         )
     )
 
-    print(f"Wrote {len(manifest)} annotator files to {OUT_DIR}")
+    print(f"Wrote {len(manifest)} annotator files to {args.out_dir}")
     print(f"Total annotations: {sum(m['num_annotations'] for m in manifest)}")
 
 
