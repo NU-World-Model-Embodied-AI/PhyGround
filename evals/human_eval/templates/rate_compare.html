@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Compare — {{ video_entries | length }} Models{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <span class="annotator-name">{{ annotator_name }}</span>
+<a href="/demo" target="_blank" class="btn btn-guide">Demo</a>
+  <span class="progress-label">Progress: {{ user_completed_groups }} / {{ user_quota }}</span>
+</div>
+
+{% set progress_compact = true %}
+{% include "_progress_bar.html" %}
+
+<div class="container compare-container">
+  <div class="instruction-banner">
+    <strong>Instructions:</strong> Watch all three videos below. Rate <em>each</em> video independently.
+    Your rating should range from 1-5, with 1 meaning completely implausible and 5 meaning fully plausible.
+    Judge only physical plausibility — do not let brightness, colour saturation, or visual appeal influence your ratings.
+    <div class="scoring-guide-inline">
+      <span>Scoring:</span>
+      <span style="color:#ef4444">1 = Completely implausible</span>
+      <span style="color:#f97316">2 = Largely implausible</span>
+      <span style="color:#eab308">3 = Partially plausible</span>
+      <span style="color:#16a34a">4 = Mostly plausible</span>
+      <span style="color:#15803d">5 = Fully plausible</span>
+    </div>
+  </div>
+
+  <!-- Shared prompt -->
+  <div class="prompt-box compare-prompt">
+    <span class="prompt-label">Generation Prompt (shared by all videos)</span>
+    <p class="prompt-text">{{ prompt }}</p>
+  </div>
+
+  <!-- Video grid — single form wrapping all cards -->
+  <form id="submit-all-form" method="POST" action="/rate_group/{{ group_id }}">
+  <div class="compare-grid compare-grid-{{ video_entries | length }}">
+    {% for label, assignment in video_entries %}
+    {% set vid_status = status_map.get(assignment.id, STATUS_ASSIGNED) %}
+    {% set is_done = vid_status in (STATUS_COMPLETED, STATUS_SKIPPED) %}
+    <div class="compare-card{% if vid_status == STATUS_COMPLETED %} card-completed{% elif vid_status == STATUS_SKIPPED %} card-skipped{% endif %}" data-vid="{{ assignment.id }}">
+      <div class="compare-card-header">
+        <span class="compare-label">Video {{ label }}</span>
+        {% if vid_status == STATUS_COMPLETED %}
+        <span class="status-badge completed">Submitted</span>
+        {% elif vid_status == STATUS_SKIPPED %}
+        <span class="status-badge skipped">Skipped</span>
+        {% endif %}
+      </div>
+
+      <div class="compare-video-wrap">
+        <video class="video-player compare-video" muted>
+          <source src="/video/{{ assignment.dataset }}/{{ assignment.filename }}" type="video/mp4">
+        </video>
+        <div class="video-controls">
+          <button type="button" class="vc-btn vc-play" onclick="togglePlay(this)">&#9654;</button>
+          <div class="vc-bar" onclick="seekVideo(event, this)">
+            <div class="vc-progress"></div>
+          </div>
+          <button type="button" class="vc-btn vc-mute" onclick="toggleMute(this)">&#128263;</button>
+        </div>
+      </div>
+
+      <div class="card-form" data-vid="{{ assignment.id }}">
+        <!-- General dimensions -->
+        <div class="score-section">
+          <h3 class="section-title">General Dimensions</h3>
+          {% set es = existing_scores_map.get(assignment.id) %}
+          {% for key, dim_label, values, description, score_labels in general_dims %}
+          <div class="dim-row">
+            <div class="dim-info">
+              <span class="dim-label">{{ description }}</span>
+            </div>
+            <div class="score-btns">
+              {% for v in values %}
+              <button type="button"
+                class="score-btn{% if es and es.get('general', {}).get(key) == v %} selected{% endif %}"
+                data-value="{{ v }}"
+                title="{{ score_labels[v] }}"
+                onclick="selectScore(this)"
+                {% if is_done %}disabled{% endif %}>{{ v }}</button>
+              {% endfor %}
+              <input type="hidden" class="score-input" name="v{{ assignment.id }}_{{ key }}"
+                value="{{ es.get('general', {}).get(key, '') if es else '' }}">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Physical sub-questions (grouped by domain) -->
+        {% if physical_dims %}
+        <div class="score-section">
+          <h3 class="section-title">Physical Sub-questions</h3>
+          {% for key, desc in physical_dims %}
+          {% set hc = human_criteria_by_key.get(key) %}
+          <div class="dim-row physical-dim-row" data-law="{{ key }}">
+            <div class="dim-info">
+              {% if hc %}
+              <span class="dim-label"><span class="law-tag">{{ key | capitalize }}</span> {{ hc.question }}</span>
+              {% if hc.note %}<span class="dim-note">{{ hc.note }}</span>{% endif %}
+              {% else %}
+              <span class="dim-label"><span class="law-tag">{{ key | capitalize }}</span> {{ desc }}</span>
+              {% endif %}
+            </div>
+            <div class="score-btns">
+              {% for v in [1, 2, 3, 4, 5] %}
+              <button type="button"
+                class="score-btn{% if es and es.get('physical', {}).get(key) == v %} selected{% endif %}"
+                data-value="{{ v }}"
+                onclick="selectScore(this)"
+                {% if is_done %}disabled{% endif %}>{{ v }}</button>
+              {% endfor %}
+              <input type="hidden" class="score-input" name="v{{ assignment.id }}_{{ key }}"
+                value="{{ es.get('physical', {}).get(key, '') if es else '' }}">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="note-section">
+          <textarea name="v{{ assignment.id }}_note" class="note-input" placeholder="Notes (optional) — If a physical law is completely irrelevant to this prompt (e.g. buoyancy when there is no water), note it here."
+            {% if is_done %}disabled{% endif %}>{{ es.get('note', '') if es else '' }}</textarea>
+        </div>
+
+        <input type="hidden" name="v{{ assignment.id }}_play_count" class="play-count-input" value="0">
+        <input type="hidden" name="v{{ assignment.id }}_stay_seconds" class="stay-seconds-input" value="0">
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% set has_pending = namespace(val=false) %}
+  {% for label, assignment in video_entries %}
+    {% if status_map.get(assignment.id, STATUS_ASSIGNED) not in (STATUS_COMPLETED, STATUS_SKIPPED) %}
+      {% set has_pending.val = true %}
+    {% endif %}
+  {% endfor %}
+  {% if has_pending.val %}
+  <div class="submit-all-section" style="text-align:center; margin: 1.5rem 0; display:flex; justify-content:center; gap:1rem;">
+    <button type="button" class="btn btn-primary btn-lg" id="submit-all-btn" onclick="doSave()">Save</button>
+    <button type="button" class="btn btn-primary btn-lg" id="submit-next-btn" onclick="doNext()">Next</button>
+  </div>
+  {% endif %}
+  </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/rate.js"></script>
+{% endblock %}

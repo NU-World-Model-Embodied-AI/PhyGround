@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Thank You{% endblock %}
+{% block content %}
+<div style="max-width:600px; margin:80px auto; text-align:center; font-family:system-ui,sans-serif;">
+  <h1 style="font-size:2rem; margin-bottom:1rem;">Thank you for your participation!</h1>
+  <p style="font-size:1.1rem; color:#555; margin-bottom:2rem;">
+    Your annotations have been saved successfully.
+  </p>
+  <div style="background:#f0f7ff; border:2px solid #3b82f6; border-radius:12px; padding:2rem; margin-bottom:2rem;">
+    <p style="font-size:1rem; color:#333; margin-bottom:0.5rem;">Your completion code:</p>
+    <p id="code" style="font-size:2.5rem; font-weight:bold; letter-spacing:0.3em; color:#1d4ed8; margin:0.5rem 0;">{{ code }}</p>
+    <button id="copyBtn"
+            style="margin-top:1rem; padding:0.5rem 1.5rem; font-size:1rem; background:#3b82f6; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+      Copy Code
+    </button>
+    <script>
+      document.getElementById('copyBtn').addEventListener('click', function() {
+        var text = '{{ code }}';
+        var btn = this;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copied!';
+            setTimeout(function(){ btn.textContent = 'Copy Code'; }, 1500);
+          });
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.textContent = 'Copied!';
+          setTimeout(function(){ btn.textContent = 'Copy Code'; }, 1500);
+        }
+      });
+    </script>
+  </div>
+  <p style="font-size:1.05rem; color:#333;">
+    Please copy this code and paste it into the survey.
+  </p>
+</div>
+{% endblock %}

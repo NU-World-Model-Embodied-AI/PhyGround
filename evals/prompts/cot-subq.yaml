@@ -1,0 +1,128 @@
+scheme: cot_subq
+description: |-
+  Structured sub-question rationale prompts for Claude distillation.
+  Claude answers fixed sub-questions with visible evidence, then outputs a JSON score.
+sub_questions:
+  source: static
+  answer_format: template
+system_prompt: |-
+  You are a strict video evaluation model.
+  Base your judgment only on visible evidence in the video.
+  Provide a concise rationale, then output a JSON object with the score.
+general_keys:
+- SA
+- PTV
+- persistence
+eval_prompts:
+  SA: |-
+    Evaluate Prompt Alignment (SA).
+
+    Caption:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    For each sub-question, briefly state the observed evidence, then give exactly one answer label from: yes, partial, no, uncertain.
+    Use this format for each sub-question:
+    qN: <brief evidence>; answer=<label>
+
+    {questions_block}
+
+    Score 1-5:
+    5=fully aligned
+    4=mostly aligned with minor deviations
+    3=partially aligned with notable gaps
+    2=mostly misaligned
+    1=not aligned
+
+    Answer every sub-question in the format above, then justify the overall score.
+    Then output a JSON object with keys "reasoning" (string) and "SA" (integer 1-5).
+    Output JSON only.
+
+    Example:
+    {{"reasoning": "q1: water balloon, target, and thrower all present; answer=yes. q2: balloon is thrown and bursts on impact; answer=yes. q3: outdoor setting and distance preserved; answer=yes. q4: target behaves like an inflatable rather than cardboard; answer=partial. Overall the scene matches well with one material mismatch.", "SA": 4}}
+  PTV: |-
+    Evaluate Temporal Coherence (PTV).
+
+    Caption:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    For each sub-question, briefly state the observed evidence, then give exactly one answer label from: yes, partial, no, uncertain.
+    Use this format for each sub-question:
+    qN: <brief evidence>; answer=<label>
+
+    {questions_block}
+
+    Score 1-5:
+    5=fully plausible event order
+    4=mostly plausible with minor timing issues
+    3=partially plausible
+    2=mostly implausible
+    1=completely implausible order
+
+    Answer every sub-question in the format above, then justify the overall score.
+    Then output a JSON object with keys "reasoning" (string) and "PTV" (integer 1-5).
+    Output JSON only.
+
+    Example:
+    {{"reasoning": "q1: bottle shatters before any object contacts it, effect precedes cause; answer=no. q2: rupture occurs without visible force, not a plausible physical event order; answer=no. q3: fragments appear instantly rather than progressing from impact point; answer=no. q4: no repeated resets, but the spontaneous break is an impossible state change; answer=partial. Temporal sequence is highly implausible.", "PTV": 1}}
+  persistence: |-
+    Evaluate Object Persistence.
+
+    Caption, for context only:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    For each sub-question, briefly state the observed evidence, then give exactly one answer label from: yes, partial, no, uncertain.
+    Use this format for each sub-question:
+    qN: <brief evidence>; answer=<label>
+
+    {questions_block}
+
+    Score 1-5:
+    5=fully consistent
+    4=mostly consistent with minor flicker
+    3=noticeable issues
+    2=major inconsistencies
+    1=severe disappearance or identity changes
+
+    Answer every sub-question in the format above, then justify the overall score.
+    Then output a JSON object with keys "reasoning" (string) and "persistence" (integer 1-5).
+    Output JSON only.
+
+    Example:
+    {{"reasoning": "q1: tire and ground remain present throughout; answer=yes. q2: tire and ground keep stable color and texture, but bottle label text changes mid-video; answer=partial. q3: no objects disappear or appear unexpectedly; answer=yes. q4: tire identity stable through motion, but bottle label shifts; answer=partial. Minor but noticeable label inconsistency.", "persistence": 3}}
+physical_sub_questions: true
+physical_template: |-
+  Evaluate physical realism for one physical law: {law}.
+
+  Criterion:
+  {criteria}
+
+  Caption, for context only:
+  "{prompt}"
+
+  For each sub-question, briefly state the observed evidence, then give exactly one answer label from: yes, no, uncertain, na.
+  Use this format for each sub-question:
+  qN: <brief evidence>; answer=<label>
+
+  {questions_block}
+
+  Judge the video itself. Do not penalize prompt mismatch unless it affects whether this physical law can be evaluated.
+
+  Score 1-5:
+  5=clearly correct
+  4=mostly correct with minor issues
+  3=partially correct or ambiguous
+  2=mostly incorrect
+  1=severely incorrect
+
+  Answer every sub-question in the format above, then justify the overall score.
+  Then output a JSON object with keys "reasoning" (string) and "{law}" (integer 1-5).
+  Output JSON only.
+
+  Example:
+  {{"reasoning": "q1: baseball stays in place after clear bat contact, completely unaffected; answer=yes. q2: brown chunk appears on ball surface, response wildly disproportionate to impact; answer=yes. q3: bat morphs and clips through ball, but no shattering from light touch; answer=no. Severely incorrect physical behavior.", "{law}": 1}}

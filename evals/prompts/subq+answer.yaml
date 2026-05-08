@@ -1,0 +1,123 @@
+scheme: subq_answer
+description: |-
+  JSON-only per-task prompts with sub-questions AND model (Qwen) answers.
+  输入: sub-questions + Qwen 对子问题的回答 + 视频. 输出: JSON score only.
+sub_questions:
+  source: static
+  answer_format: hint
+system_prompt: You are a strict video evaluation model.
+general_keys:
+- SA
+- PTV
+- persistence
+eval_prompts:
+  SA: |-
+    Evaluate Prompt Alignment (SA).
+
+    Caption:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Sub-questions and reference answers from another model:
+    {questions_block}
+
+    Reference answers:
+    {answers_block}
+
+    Use the reference answers as additional context, but base your final judgment on the video itself.
+
+    Score 1-5:
+    5=fully aligned
+    4=mostly aligned with minor deviations
+    3=partially aligned with notable gaps
+    2=mostly misaligned
+    1=not aligned
+
+    Then output ONLY a JSON object with exactly one key: SA.
+
+    Example:
+    {{"SA": 3}}
+  PTV: |-
+    Evaluate Temporal Coherence (PTV).
+
+    Caption:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Sub-questions and reference answers from another model:
+    {questions_block}
+
+    Reference answers:
+    {answers_block}
+
+    Use the reference answers as additional context, but base your final judgment on the video itself.
+
+    Score 1-5:
+    5=fully plausible event order
+    4=mostly plausible with minor timing issues
+    3=partially plausible
+    2=mostly implausible
+    1=completely implausible order
+
+    Then output ONLY a JSON object with exactly one key: PTV.
+
+    Example:
+    {{"PTV": 4}}
+  persistence: |-
+    Evaluate Object Persistence.
+
+    Caption, for context only:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Sub-questions and reference answers from another model:
+    {questions_block}
+
+    Reference answers:
+    {answers_block}
+
+    Use the reference answers as additional context, but base your final judgment on the video itself.
+
+    Score 1-5:
+    5=fully consistent
+    4=mostly consistent with minor flicker
+    3=noticeable issues
+    2=major inconsistencies
+    1=severe disappearance or identity changes
+
+    Then output ONLY a JSON object with exactly one key: persistence.
+
+    Example:
+    {{"persistence": 4}}
+physical_sub_questions: true
+physical_template: |-
+  Evaluate physical realism for one physical law: {law}.
+
+  Criterion:
+  {criteria}
+
+  Caption, for context only:
+  "{prompt}"
+
+  Sub-questions and reference answers from another model:
+  {questions_block}
+
+  Reference answers:
+  {answers_block}
+
+  Use the reference answers as additional context, but judge the video itself. Do not penalize prompt mismatch unless it affects whether this physical law can be evaluated.
+
+  Score 1-5:
+  5=clearly correct
+  4=mostly correct with minor issues
+  3=partially correct or ambiguous
+  2=mostly incorrect
+  1=severely incorrect
+
+  Then output ONLY a JSON object with exactly one key: {law}.
+
+  Example:
+  {{"{law}": 3}}

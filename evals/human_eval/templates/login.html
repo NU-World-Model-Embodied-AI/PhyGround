@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Login — Video Rating System{% endblock %}
+
+{% block content %}
+<div class="login-container">
+  <h1>Video Rating System</h1>
+  {% if error %}
+  <div class="error-msg">{{ error }}</div>
+  {% endif %}
+  <form method="post" action="/login">
+    <input type="hidden" name="cohort" value="{{ cohort or 'others' }}">
+    <input type="text" name="username" placeholder="Enter your username" autocomplete="off" required>
+    <p class="login-hint">Your username will be saved. Please use the same username each time.</p>
+    <button type="submit" class="btn btn-primary">Enter</button>
+  </form>
+</div>
+{% endblock %}

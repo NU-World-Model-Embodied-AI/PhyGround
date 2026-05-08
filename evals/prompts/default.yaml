@@ -1,0 +1,124 @@
+scheme: plain
+description: Per-dimension evaluation prompts, 1-5 scale (v2)
+system_prompt: You are a strict video evaluation model.
+general_keys:
+- SA
+- PTV
+- persistence
+eval_prompts:
+  SA: |-
+    You are evaluating a generated video on Prompt Alignment (SA).
+
+    The text prompt used to generate this video is:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Score SA (Prompt Alignment, 1-5):
+    5=perfectly matches prompt, 4=clearly matches, 3=mostly matches, 2=clearly does not match well, 1=severely contradicts.
+    Evaluate whether the depicted scene, objects, actions, and overall narrative correspond to the prompt description.
+
+    Output ONLY a JSON object with exactly one key "SA" (integer 1-5). No other text.
+
+    Example:
+    {{"SA": 3}}
+  PTV: |-
+    You are evaluating a generated video on Temporal Coherence (PTV).
+
+    The text prompt used to generate this video is:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Score PTV (Temporal Coherence, 1-5):
+    5=perfect temporal sequence, 4=correct order with minor timing issues, 3=mostly correct order, 2=significant misordering, 1=completely wrong temporal sequence.
+    Evaluate whether event ordering is logically consistent (e.g., objects break before scattering, liquid is poured before it flows).
+
+    Output ONLY a JSON object with exactly one key "PTV" (integer 1-5). No other text.
+
+    Example:
+    {{"PTV": 4}}
+  persistence: |-
+    You are evaluating a generated video on Object Persistence.
+
+    The text prompt used to generate this video is:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Score persistence (Object Persistence, 1-5):
+    5=perfect object constancy, 4=near-perfect with trivial flicker, 3=minor inconsistencies, 2=noticeable persistence issues, 1=severe violations (objects appear/disappear/transform randomly).
+
+    Output ONLY a JSON object with exactly one key "persistence" (integer 1-5). No other text.
+
+    Example:
+    {{"persistence": 4}}
+training_prompts:
+  SA: |-
+    You are evaluating a generated video on Prompt Alignment (SA).
+
+    Caption:
+    "{prompt}"
+
+    Evaluate whether the video content matches the caption, including scene, objects, actions, and relationships.
+
+    Score 1-5:
+    5=fully aligned
+    4=mostly aligned with minor deviations
+    3=partially aligned with notable gaps
+    2=mostly misaligned
+    1=not aligned
+
+    Output ONLY a JSON object with exactly one key: SA.
+  PTV: |-
+    You are evaluating Temporal Coherence (PTV).
+
+    Caption:
+    "{prompt}"
+
+    Evaluate whether the sequence of physical events follows a plausible temporal order.
+
+    Score 1-5:
+    5=fully plausible event order
+    4=mostly plausible with minor issues
+    3=partially plausible
+    2=mostly implausible
+    1=completely implausible order
+
+    Output ONLY a JSON object with exactly one key: PTV.
+  persistence: |-
+    You are evaluating Object Persistence.
+
+    Caption, for context only:
+    "{prompt}"
+
+    Evaluate whether objects maintain consistent existence, shape, and appearance throughout the video.
+
+    Score 1-5:
+    5=fully consistent
+    4=mostly consistent with minor flicker
+    3=noticeable issues
+    2=major inconsistencies
+    1=severe disappearance or identity changes
+
+    Output ONLY a JSON object with exactly one key: persistence.
+physical_sub_questions: false
+physical_template: |-
+  You are evaluating physical realism for one physical law: {law}.
+
+  Criterion:
+  {criteria}
+
+  Caption, for context only:
+  "{prompt}"
+  {questions_block}
+  Judge the video itself. Do not penalize prompt mismatch unless it affects whether this physical law can be evaluated.
+
+  Score 1-5:
+  5=clearly correct
+  4=mostly correct with minor issues
+  3=partially correct or ambiguous
+  2=mostly incorrect
+  1=severely incorrect
+
+  Output ONLY a JSON object with exactly one key: {law}.

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Task List — Video Rating System{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <span class="annotator-name">{{ annotator_name }}</span>
+  <a href="/demo" class="btn btn-guide" target="_blank">Demo</a>
+  <span class="progress-label">Progress: {{ user_completed_groups }} / {{ user_quota }}</span>
+</div>
+
+{% include "_progress_bar.html" %}
+
+<div class="container">
+  {% if needs_demographics %}
+  <div class="demographics-box">
+    <h2>Evaluating the Realism of Short Videos</h2>
+    <p>Welcome, and thank you for participating!</p>
+    <p>Your task is simple: you will watch a series of short videos and rate how realistic certain physical behaviours look to you.</p>
+    <p>Please read the following information before proceeding.</p>
+    <ul style="text-align:left; margin:0.8em 0;">
+      <li><strong>Voluntary participation.</strong> Your participation is voluntary. You may stop at any time, with no penalty.</li>
+      <li><strong>Duration.</strong> This takes about 15 minutes.</li>
+      <li><strong>Privacy.</strong> We do not collect your name, email address, or any information that could identify you personally.</li>
+      <li><strong>Use of data.</strong> Your responses will be kept confidential and used internally only.</li>
+    </ul>
+    <hr style="margin:1.2em 0; border:none; border-top:1px solid #ccc;">
+    <h3>Basic Information</h3>
+    <p>We collect the following background information for internal use only.</p>
+    <form action="/demographics" method="POST" class="demographics-form">
+      <div class="demo-field">
+        <label class="demo-label">Gender <span class="required">*</span></label>
+        <div class="demo-options">
+          <label><input type="radio" name="gender" value="male" required> Male</label>
+          <label><input type="radio" name="gender" value="female"> Female</label>
+          <label><input type="radio" name="gender" value="other"> Other</label>
+          <label><input type="radio" name="gender" value="prefer_not_to_say"> Prefer not to say</label>
+        </div>
+      </div>
+      <div class="demo-field">
+        <label class="demo-label">Age <span class="required">*</span></label>
+        <select name="age" class="demo-input" style="width:240px" required>
+          <option value="" disabled selected>Select</option>
+          <option value="under18">Under 18</option>
+          <option value="18-22">18–22</option>
+          <option value="22-25">22–25</option>
+          <option value="26-30">26–30</option>
+          <option value="31-40">31–40</option>
+          <option value="41+">41+</option>
+        </select>
+      </div>
+      <div class="demo-field">
+        <label class="demo-label">Major <span class="required">*</span></label>
+        <div class="demo-options">
+          <label><input type="radio" name="major" value="CS" required> Computer Science</label>
+          <label><input type="radio" name="major" value="EE"> Electrical Engineering</label>
+          <label><input type="radio" name="major" value="Business"> Business</label>
+          <label><input type="radio" name="major" value="other"> Other:</label>
+          <input type="text" name="major_other" class="demo-input demo-input-inline" placeholder="Please specify" disabled>
+        </div>
+      </div>
+      <div class="demo-field">
+        <label class="demo-label">Highest education (including pursuing) <span class="required">*</span></label>
+        <select name="education" class="demo-input" style="width:240px" required>
+          <option value="" disabled selected>Select</option>
+          <option value="bachelor">Bachelor</option>
+          <option value="master">Master</option>
+          <option value="phd">PhD</option>
+        </select>
+      </div>
+      <script>
+        document.querySelectorAll('input[name="major"]').forEach(function(r) {
+          r.addEventListener('change', function() {
+            var otherInput = document.querySelector('input[name="major_other"]');
+            otherInput.disabled = this.value !== 'other';
+            if (this.value === 'other') otherInput.focus();
+            else otherInput.value = '';
+          });
+        });
+      </script>
+      <button type="submit" class="btn btn-primary btn-start">Continue</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="instructions-box">
+    <h2>Instructions</h2>
+    <p>Welcome! You will be shown pairs of AI-generated videos along with their text prompts and reference images. Your task is to compare the videos and rate which one better follows the prompt and obeys real-world physical laws.</p>
+    <p>You can stop at any time and close the browser — your progress is saved automatically. Come back and resume whenever you like.</p>
+    <p>Please provide thoughtful and consistent ratings. Your evaluations are very important to us.</p>
+    <p>Check the <a href="/demo" target="_blank"><strong>Demo</strong></a> (top-right corner) to see how we score videos before you begin.</p>
+  </div>
+
+  {% include "_scale_table.html" %}
+
+  <div class="start-section">
+    <form action="/tasks/start" method="post" onsubmit="this.querySelector('button').disabled=true">
+      <button type="submit" class="btn btn-start">I understand the scale — Continue</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

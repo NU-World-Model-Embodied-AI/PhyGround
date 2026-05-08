@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Basic Information — Video Rating System{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="demographics-box">
+    <h3>Basic Information</h3>
+    <p>Background information for internal use only.</p>
+    <form action="/demographics" method="POST" class="demographics-form">
+      <div class="demo-field">
+        <label class="demo-label">Gender <span class="required">*</span></label>
+        <div class="demo-options">
+          <label><input type="radio" name="gender" value="male" required> Male</label>
+          <label><input type="radio" name="gender" value="female"> Female</label>
+          <label><input type="radio" name="gender" value="other"> Other</label>
+          <label><input type="radio" name="gender" value="prefer_not_to_say"> Prefer not to say</label>
+        </div>
+      </div>
+      <div class="demo-field">
+        <label class="demo-label">Age <span class="required">*</span></label>
+        <select name="age" class="demo-input" style="width:240px" required>
+          <option value="" disabled selected>Select</option>
+          <option value="under18">Under 18</option>
+          <option value="18-22">18–22</option>
+          <option value="22-25">22–25</option>
+          <option value="26-30">26–30</option>
+          <option value="31-40">31–40</option>
+          <option value="41+">41+</option>
+        </select>
+      </div>
+      <div class="demo-field">
+        <label class="demo-label">Major <span class="required">*</span></label>
+        <div class="demo-options">
+          <label><input type="radio" name="major" value="CS" required> Computer Science</label>
+          <label><input type="radio" name="major" value="EE"> Electrical and Computer Engineering</label>
+          <label><input type="radio" name="major" value="Business"> Business</label>
+          <label><input type="radio" name="major" value="other"> Other:</label>
+          <input type="text" name="major_other" class="demo-input demo-input-inline" placeholder="Please specify" disabled>
+        </div>
+      </div>
+      <div class="demo-field">
+        <label class="demo-label">Highest education (including pursuing) <span class="required">*</span></label>
+        <select name="education" class="demo-input" style="width:240px" required>
+          <option value="" disabled selected>Select</option>
+          <option value="bachelor">Bachelor</option>
+          <option value="master">Master</option>
+          <option value="phd">PhD</option>
+        </select>
+      </div>
+      <script>
+        document.querySelectorAll('input[name="major"]').forEach(function(r) {
+          r.addEventListener('change', function() {
+            var otherInput = document.querySelector('input[name="major_other"]');
+            otherInput.disabled = this.value !== 'other';
+            if (this.value === 'other') otherInput.focus();
+            else otherInput.value = '';
+          });
+        });
+      </script>
+      <button type="submit" class="btn btn-primary btn-start">Continue</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

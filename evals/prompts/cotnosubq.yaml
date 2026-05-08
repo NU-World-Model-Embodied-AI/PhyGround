@@ -1,0 +1,105 @@
+scheme: cot
+description: |-
+  Free-form rationale prompts for Claude distillation.
+  Claude outputs concise evidence-based reasoning plus a JSON score, used as training data for smaller VLM judges.
+system_prompt: |-
+  You are a strict video evaluation model.
+  Base your judgment only on visible evidence in the video.
+  Provide concise evidence-based reasoning, then output a JSON object with the score.
+general_keys:
+- SA
+- PTV
+- persistence
+eval_prompts:
+  SA: |-
+    Evaluate Prompt Alignment (SA).
+
+    Caption:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Score 1-5:
+    5=fully aligned
+    4=mostly aligned with minor deviations
+    3=partially aligned with notable gaps
+    2=mostly misaligned
+    1=not aligned
+
+    Write concise reasoning that cites the visible evidence for the score. Consider whether the main objects, actions, scene attributes, and relationships from the caption are present, and whether the video avoids major contradictions to the caption.
+
+    Then output a JSON object with keys "reasoning" (string) and "SA" (integer 1-5).
+    Output JSON only.
+
+    Example:
+    {{"reasoning": "The video shows the water balloon, target, thrower, and outdoor setup described in the caption. The throw and burst are visible, but the target behaves more like an inflatable surface than cardboard, creating a minor material mismatch. Overall the scene follows the requested event with one noticeable deviation.", "SA": 4}}
+  PTV: |-
+    Evaluate Temporal Coherence (PTV).
+
+    Caption:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Score 1-5:
+    5=fully plausible event order
+    4=mostly plausible with minor timing issues
+    3=partially plausible
+    2=mostly implausible
+    1=completely implausible order
+
+    Write concise reasoning that cites the visible evidence for the score. Consider cause-before-effect order, plausible event timing, continuous motion transitions, and whether the sequence avoids impossible reversals, jumps, loops, or resets.
+
+    Then output a JSON object with keys "reasoning" (string) and "PTV" (integer 1-5).
+    Output JSON only.
+
+    Example:
+    {{"reasoning": "The bottle shatters before any visible object contacts it, so the effect appears before the cause. The rupture happens without a clear force and the fragments appear nearly instantly rather than progressing from an impact point. The temporal sequence is therefore highly implausible.", "PTV": 1}}
+  persistence: |-
+    Evaluate Object Persistence.
+
+    Caption, for context only:
+    "{prompt}"
+
+    The video was generated using a text+image-to-video (ti2v) model, conditioned on the first frame and the text prompt above.
+
+    Score 1-5:
+    5=fully consistent
+    4=mostly consistent with minor flicker
+    3=noticeable issues
+    2=major inconsistencies
+    1=severe disappearance or identity changes
+
+    Write concise reasoning that cites the visible evidence for the score. Consider whether objects remain present, keep stable shape, size, color, and texture, avoid unexpected appearances or transformations, and preserve identity through motion and brief occlusion.
+
+    Then output a JSON object with keys "reasoning" (string) and "persistence" (integer 1-5).
+    Output JSON only.
+
+    Example:
+    {{"reasoning": "The tire and ground remain visible throughout, and the main object identity is mostly stable during motion. However, the bottle label changes appearance mid-video and the held object shows small texture shifts. These are noticeable but not severe persistence errors.", "persistence": 3}}
+physical_sub_questions: false
+physical_template: |-
+  Evaluate physical realism for one physical law: {law}.
+
+  Criterion:
+  {criteria}
+
+  Caption, for context only:
+  "{prompt}"
+
+  Judge the video itself. Do not penalize prompt mismatch unless it affects whether this physical law can be evaluated.
+
+  Score 1-5:
+  5=clearly correct
+  4=mostly correct with minor issues
+  3=partially correct or ambiguous
+  2=mostly incorrect
+  1=severely incorrect
+
+  Write concise reasoning that cites the visible evidence for the score. Focus on whether the relevant physical law is followed in the visible motion, interactions, object boundaries, material behavior, and state changes.
+
+  Then output a JSON object with keys "reasoning" (string) and "{law}" (integer 1-5).
+  Output JSON only.
+
+  Example:
+  {{"reasoning": "The baseball receives clear bat contact but barely responds, so the collision response does not match the visible impact force. A brown deformation appears on the ball surface in a way that is disproportionate and inconsistent with the contact. The physical behavior is severely incorrect for this law.", "{law}": 1}}

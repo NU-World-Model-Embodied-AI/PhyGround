@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Video Rating System{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="mobile-block" style="display:none; position:fixed; inset:0; z-index:99999; background:#fff; justify-content:center; align-items:center; text-align:center; padding:2rem;">
+    <div>
+      <h2 style="font-size:1.5rem; margin-bottom:1rem;">Please use a computer</h2>
+      <p style="color:#666;">This requires a desktop or laptop browser for accurate video evaluation. Mobile devices are not supported.</p>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var w = window.innerWidth;
+      if (w < 768 || /Android|iPhone|iPod/i.test(navigator.userAgent)) {
+        var b = document.getElementById('mobile-block');
+        b.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      }
+    })();
+  </script>
+  {% block content %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

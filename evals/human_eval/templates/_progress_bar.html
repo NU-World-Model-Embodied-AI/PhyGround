@@ -1,0 +1,16 @@
+{# Progress bar partial — expects user_completed_groups, user_quota in context.
+   Set progress_compact = true before including to hide the stats text. #}
+<div class="progress-section">
+  {% if not progress_compact | default(false) %}
+  <div class="progress-stats">
+    <span class="progress-stat-main">
+      You: {{ user_completed_groups }} / {{ user_quota }} groups rated
+    </span>
+  </div>
+  {% endif %}
+  {% set pct = [user_completed_groups / user_quota * 100, 100] | min if user_quota > 0 else 0 %}
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" style="width: {{ pct | round(1) }}%"></div>
+  </div>
+  <span class="progress-pct">{{ pct | round(1) }}%</span>
+</div>

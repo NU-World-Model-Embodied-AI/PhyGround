@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annotation Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; padding: 2rem; }
+    h1 { font-size: 1.6rem; margin-bottom: 1.5rem; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card { background: #fff; border-radius: 10px; padding: 1.2rem; box-shadow: 0 1px 4px rgba(0,0,0,.08); text-align: center; }
+    .card .num { font-size: 2rem; font-weight: 700; }
+    .card .label { font-size: .85rem; color: #888; margin-top: .3rem; }
+    .card.green .num { color: #16a34a; }
+    .card.blue .num { color: #2563eb; }
+    .card.orange .num { color: #ea580c; }
+    .card.purple .num { color: #6366f1; }
+    .card.gray .num { color: #64748b; }
+
+    h2 { font-size: 1.2rem; margin: 1.5rem 0 .8rem; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 2rem; }
+    th, td { padding: .7rem 1rem; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f8fafc; font-weight: 600; font-size: .85rem; color: #64748b; text-transform: uppercase; letter-spacing: .03em; }
+    td { font-size: .95rem; }
+    .bar-bg { background: #e5e7eb; border-radius: 4px; height: 8px; width: 100%; min-width: 120px; display: flex; overflow: hidden; }
+    .bar-fill { height: 8px; transition: width .3s; }
+    .bar-fill:first-child { border-radius: 4px 0 0 4px; }
+    .bar-fill:last-child { border-radius: 0 4px 4px 0; }
+    .bar-fill:only-child { border-radius: 4px; }
+    .bar-fill.done { background: #16a34a; }
+    .bar-fill.partial { background: #6366f1; }
+    .bar-fill.skipped { background: #fbbf24; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .8rem; font-weight: 500; }
+    .tag-completed { background: #dcfce7; color: #166534; }
+    .tag-partial { background: #e0e7ff; color: #3730a3; }
+    .tag-assigned { background: #dbeafe; color: #1e40af; }
+    .tag-skipped { background: #fef3c7; color: #92400e; }
+    .ts { color: #94a3b8; font-size: .8rem; margin-top: 1.5rem; text-align: right; }
+    .refresh-btn { background: #2563eb; color: #fff; border: none; padding: .4rem 1rem; border-radius: 6px; cursor: pointer; font-size: .85rem; margin-left: 1rem; }
+    .refresh-btn:hover { background: #1d4ed8; }
+    .toggle-btn { background: #6366f1; color: #fff; border: none; padding: .4rem 1rem; border-radius: 6px; cursor: pointer; font-size: .85rem; margin-left: .5rem; }
+    .toggle-btn:hover { background: #4f46e5; }
+    .toggle-btn.active { background: #16a34a; }
+    .db-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: .8rem; font-weight: 600; margin-left: .7rem; vertical-align: middle; }
+    .db-badge.raw { background: #fee2e2; color: #991b1b; }
+    .db-badge.filtered { background: #dcfce7; color: #166534; }
+    .card.red .num { color: #dc2626; }
+    .empty { color: #94a3b8; font-style: italic; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Annotation Dashboard
+    <span class="db-badge {{ 'filtered' if filtered else 'raw' }}">{{ db_name }}</span>
+    {% if has_filtered_db %}
+    <a href="?filtered={{ '0' if filtered else '1' }}"><button class="toggle-btn {{ 'active' if filtered else '' }}">{{ 'Show Raw' if filtered else 'Show Filtered' }}</button></a>
+    {% endif %}
+    <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+  </h1>
+
+  <div class="cards">
+    <div class="card blue"><div class="num">{{ total_videos }}</div><div class="label">Total Videos</div></div>
+    <div class="card green"><div class="num">{{ total_completed }}</div><div class="label">Completed</div></div>
+    <div class="card purple"><div class="num">{{ total_partial }}</div><div class="label">Partial</div></div>
+    <div class="card orange"><div class="num">{{ total_assigned }}</div><div class="label">Pending</div></div>
+    <div class="card gray"><div class="num">{{ total_skipped }}</div><div class="label">Skipped</div></div>
+    <div class="card"><div class="num">{{ total_annotations }}</div><div class="label">Annotations</div></div>
+    <div class="card red"><div class="num">{{ annotations_needed }}</div><div class="label">Still Needed ({{ target_n }}x)</div></div>
+    <div class="card"><div class="num">{{ total_groups }}</div><div class="label">Groups</div></div>
+  </div>
+
+  <h2>Coverage (target: {{ target_n }}x per video)</h2>
+  <div class="cards">
+    <div class="card green"><div class="num">{{ coverage.fully }}</div><div class="label">Fully Covered</div></div>
+    <div class="card orange"><div class="num">{{ coverage.partially }}</div><div class="label">Partially Covered</div></div>
+    <div class="card gray"><div class="num">{{ coverage.uncovered }}</div><div class="label">Uncovered</div></div>
+  </div>
+
+  <h2>Per-Model Coverage</h2>
+  <table>
+    <thead>
+      <tr><th>Model</th><th>Total</th><th>3x</th><th>2x</th><th>1x</th><th>0x</th><th>Coverage</th></tr>
+    </thead>
+    <tbody>
+      {% for m in per_model %}
+      {% set mtotal = m.fully + m.partially + m.uncovered %}
+      <tr>
+        <td>{{ m.model }}</td>
+        <td>{{ mtotal }}</td>
+        <td><span class="tag tag-completed">{{ m.v3 }}</span></td>
+        <td><span class="tag tag-partial">{{ m.v2 }}</span></td>
+        <td>{{ m.v1 }}</td>
+        <td>{{ m.v0 }}</td>
+        <td>
+          {% if mtotal > 0 %}
+          <div class="bar-bg"><div class="bar-fill done" style="width:{{ (m.v3 / mtotal * 100)|round }}%"></div>{% if m.v2 > 0 %}<div class="bar-fill partial" style="width:{{ (m.v2 / mtotal * 100)|round }}%"></div>{% endif %}{% if m.v1 > 0 %}<div class="bar-fill skipped" style="width:{{ (m.v1 / mtotal * 100)|round }}%"></div>{% endif %}</div>
+          <span style="font-size:.75rem;color:#888">{{ m.v3 + m.v2 + m.v1 }}/{{ mtotal }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Cohort Summary</h2>
+  <table>
+    <thead>
+      <tr><th>Cohort</th><th>Registered</th><th>Completed</th><th>Partial</th><th>Pending</th><th>Skipped</th><th>Progress</th></tr>
+    </thead>
+    <tbody>
+      {% for c in cohort_summary %}
+      <tr>
+        <td>{{ c.cohort }}</td>
+        <td>{{ c.registered }}{% if c.expected %}/{{ c.expected }}{% endif %}</td>
+        <td><span class="tag tag-completed">{{ c.completed }}</span></td>
+        <td><span class="tag tag-partial">{{ c.partial }}</span></td>
+        <td><span class="tag tag-assigned">{{ c.assigned }}</span></td>
+        <td><span class="tag tag-skipped">{{ c.skipped }}</span></td>
+        <td>
+          {% set total = c.completed + c.partial + c.assigned + c.skipped %}
+          {% if total > 0 %}
+          <div class="bar-bg"><div class="bar-fill done" style="width:{{ (c.completed / total * 100)|round }}%"></div>{% if c.partial > 0 %}<div class="bar-fill partial" style="width:{{ (c.partial / total * 100)|round }}%"></div>{% endif %}{% if c.skipped > 0 %}<div class="bar-fill skipped" style="width:{{ (c.skipped / total * 100)|round }}%"></div>{% endif %}</div>
+          <span style="font-size:.75rem;color:#888">{{ c.completed + c.partial }}/{{ total }}</span>
+          {% else %}
+          <span class="empty">no tasks</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      <tr style="font-weight:700;background:#f8fafc">
+        <td>Total</td>
+        <td>{{ cohort_summary|sum(attribute='registered') }}/{{ cohort_summary|sum(attribute='expected') }}</td>
+        <td><span class="tag tag-completed">{{ cohort_summary|sum(attribute='completed') }}</span></td>
+        <td><span class="tag tag-partial">{{ cohort_summary|sum(attribute='partial') }}</span></td>
+        <td><span class="tag tag-assigned">{{ cohort_summary|sum(attribute='assigned') }}</span></td>
+        <td><span class="tag tag-skipped">{{ cohort_summary|sum(attribute='skipped') }}</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>NEU PG Student IDs</h2>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Cohort</th><th>Completed</th><th>Partial</th><th>Assigned</th><th>Skipped</th><th>Progress</th></tr>
+    </thead>
+    <tbody>
+      {% for a in per_annotator %}
+      <tr>
+        <td>{{ a.name }}</td>
+        <td>{{ a.cohort or '-' }}</td>
+        <td><span class="tag tag-completed">{{ a.completed }}</span></td>
+        <td><span class="tag tag-partial">{{ a.partial }}</span></td>
+        <td><span class="tag tag-assigned">{{ a.assigned }}</span></td>
+        <td><span class="tag tag-skipped">{{ a.skipped }}</span></td>
+        <td>
+          {% set total = a.completed + a.partial + a.assigned + a.skipped %}
+          {% if total > 0 %}
+          <div class="bar-bg"><div class="bar-fill done" style="width:{{ (a.completed / total * 100)|round }}%"></div>{% if a.partial > 0 %}<div class="bar-fill partial" style="width:{{ (a.partial / total * 100)|round }}%"></div>{% endif %}{% if a.skipped > 0 %}<div class="bar-fill skipped" style="width:{{ (a.skipped / total * 100)|round }}%"></div>{% endif %}</div>
+          <span style="font-size:.75rem;color:#888">{{ a.completed + a.partial }}/{{ total }}</span>
+          {% else %}
+          <span class="empty">no tasks</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if recent_activity %}
+  <h2>Recent Activity</h2>
+  <table>
+    <thead>
+      <tr><th>Annotator</th><th>Video</th><th>Status</th><th>Time</th></tr>
+    </thead>
+    <tbody>
+      {% for r in recent_activity %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td title="{{ r.filename }}">{{ r.filename|truncate(40) }}</td>
+        <td><span class="tag tag-{{ r.status }}">{{ r.status }}</span></td>
+        <td>{{ r.completed_at or r.assigned_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <div class="ts">Last loaded: <script>document.write(new Date().toLocaleString())</script></div>
+</body>
+</html>

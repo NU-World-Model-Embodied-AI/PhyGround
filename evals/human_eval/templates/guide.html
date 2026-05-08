@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{% if lang == 'zh' %}评分指南{% else %}Scoring Guide{% endif %} — Video Rating System{% endblock %}
+
+{% block content %}
+<div class="container guide-container">
+  <div class="guide-topbar">
+    <form action="/tasks/start" method="post" style="display:inline;">
+      <button type="submit" class="btn btn-start btn-sm">{% if lang == 'zh' %}开始评分{% else %}Start Rating{% endif %}</button>
+    </form>
+    <span style="float:right"></span>
+  </div>
+
+  <h1 class="guide-title">{% if lang == 'zh' %}评分指南{% else %}Scoring Guide{% endif %}</h1>
+  <p class="guide-intro">
+    {% if lang == 'zh' %}
+    开始评分前请仔细阅读本指南。请完整观看视频后，对<strong>每个</strong>维度打分。
+    {% else %}
+    Please read this guide carefully before you start rating.
+    Watch the full video, then rate <strong>every</strong> dimension.
+    {% endif %}
+  </p>
+
+  <!-- ===== Scale ===== -->
+  <div class="guide-section">
+    <h2>{% if lang == 'zh' %}评分尺度{% else %}Rating Scale{% endif %}</h2>
+    <table class="guide-table">
+      <thead>
+        <tr><th>{% if lang == 'zh' %}分数{% else %}Score{% endif %}</th><th>{% if lang == 'zh' %}含义{% else %}Meaning{% endif %}</th></tr>
+      </thead>
+      <tbody>
+        {% if lang == 'zh' %}
+        <tr><td class="score-cell s5">5</td><td>完全合理</td></tr>
+        <tr><td class="score-cell s4">4</td><td>大部分合理</td></tr>
+        <tr><td class="score-cell s3">3</td><td>部分合理</td></tr>
+        <tr><td class="score-cell s2">2</td><td>大部分不合理</td></tr>
+        <tr><td class="score-cell s1">1</td><td>完全不合理</td></tr>
+        {% else %}
+        <tr><td class="score-cell s5">5</td><td>Fully plausible</td></tr>
+        <tr><td class="score-cell s4">4</td><td>Mostly plausible</td></tr>
+        <tr><td class="score-cell s3">3</td><td>Partially plausible</td></tr>
+        <tr><td class="score-cell s2">2</td><td>Largely implausible</td></tr>
+        <tr><td class="score-cell s1">1</td><td>Completely implausible</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+    <p class="guide-note">
+      {% if lang == 'zh' %}
+      所有维度统一使用 1–5 分制。
+      {% else %}
+      All dimensions (general and physical) use the 1–5 scale above.
+      {% endif %}
+    </p>
+  </div>
+
+  <!-- ===== General Dimensions ===== -->
+  <div class="guide-section">
+    <h2>{% if lang == 'zh' %}通用维度{% else %}General Dimensions{% endif %}</h2>
+    <div class="dim-cards">
+      {% for key, label, values, description, score_labels in general_dims_display %}
+      <div class="guide-card">
+        <div class="guide-card-header">
+          <span class="dim-key">{{ key }}</span>
+          <span class="guide-card-label">{{ label }}</span>
+          <span class="guide-card-scale">{% if values | length == 2 %}0/1{% else %}1–5{% endif %}</span>
+        </div>
+        <p class="guide-card-desc">{{ description }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ===== Physical Sub-questions (Rating Instrument) ===== -->
+  <div class="guide-section">
+    <h2>{% if lang == 'zh' %}物理子问题 (1–5){% else %}Physical Sub-questions (1–5){% endif %}</h2>
+    <p class="guide-note">
+      {% if lang == 'zh' %}
+      每个视频有 2–4 个需要评估的物理法则，只需对显示的法则打分。
+      {% else %}
+      Each video has 2–4 physical laws to evaluate. You only rate the laws shown for that video.
+      {% endif %}
+    </p>
+
+    <div class="dim-cards">
+      {% for c in human_criteria %}
+      <div class="guide-card guide-card-phys">
+        <div class="guide-card-header">
+          <span class="dim-key">{{ c.key | capitalize }}</span>
+          <span class="guide-card-scale">1–5</span>
+        </div>
+        <p class="guide-card-desc"><strong>Q:</strong> {{ c.question }}</p>
+        {% if c.note %}
+        <p class="guide-card-note"><strong>Note:</strong> {{ c.note }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+
+
+  <div class="guide-footer">
+    <form action="/tasks/start" method="post">
+      <button type="submit" class="btn btn-start">{% if lang == 'zh' %}开始评分{% else %}Start Rating{% endif %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

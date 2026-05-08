@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{% if lang == 'zh' %}Demo{% else %}Demo{% endif %} — Video Rating System{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <span class="annotator-name">{{ annotator_name }}</span>
+  <span class="progress-label">Progress: {{ user_completed_groups }} / {{ user_quota }}</span>
+</div>
+
+{% include "_progress_bar.html" %}
+
+<div class="container">
+  <!-- Instructions -->
+  <div class="instructions-box">
+    <h2>Instructions</h2>
+    <p>You will be shown pairs of videos along with their text prompts and reference images. Your task is to evaluate whether each video obeys real-world physical laws independently.</p>
+    <p>Please provide thoughtful and consistent ratings. Your evaluations are very important to us.</p>
+    <p>Check the scoring demo examples below to see how we score videos before you begin.</p>
+  </div>
+
+  {% include "_scale_table.html" %}
+
+  <!-- Scoring Demo Examples -->
+  <div class="guide-container" style="max-width:100%; padding:0;">
+    <h1 class="guide-title">{% if lang == 'zh' %}评分示范{% else %}Scoring Demo{% endif %}</h1>
+    <p class="guide-intro">
+      {% if lang == 'zh' %}
+      以下是人工打分的实际案例。高亮的按钮是给出的分数，下方是评分理由，供你参考如何打分。
+      {% else %}
+      Below are human scoring examples. The highlighted button is the score given, with reasoning shown below. Use these as a reference for how to rate.
+      {% endif %}
+    </p>
+
+    {% for demo in demos %}
+    <div class="guide-section demo-example">
+      <h2>{% if lang == 'zh' %}示例{% else %}Example{% endif %} {{ loop.index }}</h2>
+
+      <!-- Prompt -->
+      <div class="prompt-box compare-prompt">
+        <span class="prompt-label">Prompt</span>
+        <p class="prompt-text">{{ demo.prompt }}</p>
+      </div>
+
+      <!-- Video -->
+      <div class="demo-video-wrap">
+        <video class="demo-video" controls muted loop>
+          <source src="{{ demo.video_url }}" type="video/mp4">
+        </video>
+        <p class="text-muted" style="font-size:0.85em; margin-top:0.3em;">
+          {% if lang == 'zh' %}点击 play 可以播放视频，再次点击可以重放{% else %}Click play to start the video; click again to replay{% endif %}
+        </p>
+      </div>
+
+      <!-- General Dimensions — same layout as rating page -->
+      {% set rg = demo.rationale_general_zh if lang == 'zh' and demo.rationale_general_zh else demo.rationale_general %}
+      <div class="score-section">
+        <h3 class="section-title">{% if lang == 'zh' %}通用维度{% else %}General Dimensions{% endif %}</h3>
+        {% for key, dim_label, values, description, score_labels in general_dims %}
+        <div class="dim-row">
+          <div class="dim-info">
+            <span class="dim-label">{{ description }}</span>
+          </div>
+          <div class="score-btns">
+            {% for v in values %}
+            <button type="button"
+              class="score-btn{% if demo.scores.get(key) == v %} demo-selected{% endif %}"
+              title="{{ score_labels[v] }}"
+              disabled>{{ v }}</button>
+            {% endfor %}
+          </div>
+          {% if rg and rg.get(key) %}
+          <div class="dim-reasoning">{{ rg[key] }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Physical Sub-questions — same layout as rating page -->
+      {% if demo.physical_dims %}
+      {% set rp = demo.rationale_physical_zh if lang == 'zh' and demo.rationale_physical_zh else demo.rationale_physical %}
+      <div class="score-section">
+        <h3 class="section-title">{% if lang == 'zh' %}物理子问题{% else %}Physical Sub-questions{% endif %}</h3>
+        {% set phy_dims = demo.physical_dims_zh if lang == 'zh' and demo.physical_dims_zh else demo.physical_dims %}
+        {% for law_key, law_desc in phy_dims %}
+        {% set hc = human_criteria_by_key.get(law_key) %}
+        <div class="dim-row">
+          <div class="dim-info">
+            {% if hc %}
+            <span class="dim-label"><span class="law-tag">{{ law_key | capitalize }}</span> {{ hc.question }}</span>
+            {% if hc.note %}<span class="dim-note">{{ hc.note }}</span>{% endif %}
+            {% else %}
+            <span class="dim-label"><span class="law-tag">{{ law_key | capitalize }}</span> {{ law_desc }}</span>
+            {% endif %}
+          </div>
+          <div class="score-btns">
+            {% for v in [1, 2, 3, 4, 5] %}
+            <button type="button"
+              class="score-btn{% if demo.physical_scores.get(law_key) == v %} demo-selected{% endif %}"
+              disabled>{{ v }}</button>
+            {% endfor %}
+          </div>
+          {% if rp and rp.get(law_key) %}
+          <div class="dim-reasoning">{{ rp[law_key] }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Start Rating button -->
+  <div class="start-section">
+    <form action="/tasks/start" method="post">
+      <button type="submit" class="btn btn-start">{% if lang == 'zh' %}我已了解评分标准 — 开始评分{% else %}Start Rating{% endif %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Color demo-selected buttons by score value
+document.querySelectorAll('.score-btn.demo-selected').forEach(function(btn) {
+  var v = parseInt(btn.textContent.trim());
+  var colors = {5: '#15803d', 4: '#16a34a', 3: '#eab308', 2: '#f97316', 1: '#ef4444'};
+  btn.style.background = colors[v] || '#888';
+});
+</script>
+{% endblock %}
