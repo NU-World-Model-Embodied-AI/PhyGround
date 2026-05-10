@@ -85,5 +85,12 @@ above.
 
 ## License
 
-Released under the same terms as the rest of the Phyground release; see
-`../datasets/LICENSE`.
+Released under the **Creative Commons Attribution 4.0 International License
+(CC BY 4.0)** — the same terms as the rest of the Phyground release.
+
+You are free to share and adapt the material for any purpose, including
+commercially, provided you give appropriate credit, link to the license,
+and indicate if changes were made. No additional restrictions may be
+applied. The material is provided as-is, without warranties of any kind.
+
+Full legal text: <https://creativecommons.org/licenses/by/4.0/legalcode>
