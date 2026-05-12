@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phyground"
+version = "0.1.0"
+description = "Phyground — a benchmark for physical plausibility of text+image-to-video generations"
+readme = "README.md"
+license = { text = "CC-BY-4.0" }
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# Human-annotation Flask app + prompt dashboard
+web = ["flask"]
+
+# VLM-as-judge API clients (pick the ones you need)
+gemini = ["google-genai"]
+claude = ["google-auth", "requests"]   # Claude on Vertex AI (rawPredict)
+openai = ["openai"]
+
+# One-stop install for the eval runner (scripts/score_videos*.sh).
+# Bundles every backend client + frame-extraction stack + HF dataset CLI.
+# Pair with a system-level ffmpeg install for the local vLLM backend.
+eval = [
+    "openai",
+    "google-genai",
+    "google-auth",
+    "requests",
+    "decord",
+    "pillow",
+    "numpy",
+    "json-repair",
+    "huggingface_hub[cli]",
+]
+
+# In-process judge inference (transformers + PEFT) for the released LoRA
+# adapter on Qwen/Qwen3.5-9B. See the model card for the recommended path.
+inference = [
+    "transformers",
+    "peft",
+    "qwen-vl-utils[decord]",
+]
+
+# Judge fine-tuning (run via the ms-swift CLI; see model card)
+training = [
+    "ms-swift",
+    "deepspeed",
+]
+
+# Tests for the human-annotation app
+test = ["pytest"]
+
+# Convenience: install everything
+all = [
+    "flask",
+    "google-genai",
+    "google-auth",
+    "openai",
+    "requests",
+    "decord",
+    "pillow",
+    "numpy",
+    "json-repair",
+    "huggingface_hub[cli]",
+    "transformers",
+    "peft",
+    "qwen-vl-utils[decord]",
+    "ms-swift",
+    "deepspeed",
+    "pytest",
+]
+
+[project.urls]
+Dataset = "https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground"
+Model = "https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B"
+
+[tool.setuptools.packages.find]
+include = ["dataprocessing*", "evals*", "judge_training*"]
