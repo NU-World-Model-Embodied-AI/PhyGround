@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Slide](https://img.shields.io/badge/Slides-07C160?style=for-the-badge&logo=slides&logoColor=white)](assets/phyground-slides.pdf)
-[![Paper](https://img.shields.io/badge/Paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](#)
+[![Paper](https://img.shields.io/badge/Paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2605.10806)
 [![Hugging Face](https://img.shields.io/badge/dataset-fcd022?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground)
 
 </div>
@@ -20,7 +20,7 @@ Companion artifacts:
 | --- | --- |
 | Dataset | [🤗 NU-World-Model-Embodied-AI/phyground](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground) |
 | judge model | [🤗 model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B) |
-| Paper (rubric, methodology, results) | See dataset card for citation |
+| Paper (rubric, methodology, results) | [arXiv:2605.10806](https://arxiv.org/abs/2605.10806) |
 
 ---
 
@@ -324,3 +324,21 @@ template's `training_prompts` block — which is why
 Chain-of-thought and sub-question variants exist for ablations and
 require re-running the relevant tables under a different
 `PROMPT_CONFIG`.
+
+---
+
+## Citation
+
+Paper: [arXiv:2605.10806](https://arxiv.org/abs/2605.10806)
+
+```bibtex
+@misc{lin2026phygroundbenchmarkingphysicalreasoning,
+      title={PhyGround: Benchmarking Physical Reasoning in Generative World Models},
+      author={Juyi Lin and Arash Akbari and Yumei He and Lin Zhao and Haichao Zhang and Arman Akbari and Xingchen Xu and Zoe Y. Lu and Enfu Nan and Hokin Deng and Edmund Yeh and Sarah Ostadabbas and Yun Fu and Jennifer Dy and Pu Zhao and Yanzhi Wang},
+      year={2026},
+      eprint={2605.10806},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2605.10806},
+}
+```
