@@ -19,8 +19,8 @@ Companion artifacts:
 | Artifact | Where |
 | --- | --- |
 | Dataset | [🤗 NU-World-Model-Embodied-AI/phyground](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground) |
-| judge model | [🤗 model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B) |
-| Paper (rubric, methodology, results) | [arXiv:2605.10806](https://arxiv.org/abs/2605.10806) |
+| judge model | [🤗 Phyjudge-9B](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B) |
+| Paper (rubric, methodology, results) | [PhyGround](https://arxiv.org/abs/2605.10806) |
 
 ---
 
