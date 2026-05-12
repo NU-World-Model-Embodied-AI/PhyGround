@@ -1,0 +1,18 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Local data and run outputs
+data/
+videos/
+scores*.json
+*.jsonl
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
