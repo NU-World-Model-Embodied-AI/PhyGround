@@ -1,5 +1,13 @@
 # Phyground — Code
 
+<div align="center">
+
+[![Slide](https://img.shields.io/badge/Slides-07C160?style=for-the-badge&logo=slides&logoColor=white)](https://docs.google.com/presentation/d/1zId-ygV3gObqHgm4gLdM4euGUpHomxwDZjJ7UcEmzVs/edit?usp=sharing)
+[![Paper](https://img.shields.io/badge/Paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](#)
+[![Hugging Face](https://img.shields.io/badge/dataset-fcd022?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground)
+
+</div>
+
 Source code for **Phyground**, a benchmark for the *physical plausibility* of
 text+image-to-video (ti2v) generations. This repo contains everything needed
 to reproduce the benchmark end-to-end: prompt curation, VLM-as-judge
@@ -11,7 +19,7 @@ Companion artifacts:
 | Artifact | Where |
 | --- | --- |
 | 250 prompts × 8 ti2v models = 2,000 videos + per-rubric human ratings | [🤗 NU-World-Model-Embodied-AI/phyground](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground) |
-| LoRA judge adapter (Qwen2.5-VL based) + `infer.py` | [🤗 model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyground) (linked from the dataset card) |
+| judge model | [🤗 model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B) |
 | Paper (rubric, methodology, results) | See dataset card for citation |
 
 ---
