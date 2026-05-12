@@ -1,6 +1,8 @@
-# Phyground — Code
-
 <div align="center">
+
+<img src="assets/phyground-logo.png" alt="Phyground" width="220" />
+
+# Phyground — Code
 
 [![Slide](https://img.shields.io/badge/Slides-07C160?style=for-the-badge&logo=slides&logoColor=white)](assets/phyground-slides.pdf)
 [![Paper](https://img.shields.io/badge/Paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2605.10806)
@@ -52,17 +54,6 @@ sub-question decompositions used for chain-of-thought judging) is
 
 ---
 
-## What's in this drop
-
-Python source for the eval runner + 5 prompt-template YAMLs + the
-HTML/CSS/JS assets for the human-annotation app + two thin shell wrappers
-(`scripts/serve_judge.sh` and `scripts/score_videos*.sh`) that turn the
-runner into a one-click flow. Secrets, generated dashboards, SQLite
-databases, and binary outputs are intentionally excluded — the dataset
-and model cards point to the artifacts those scripts consume or produce.
-
----
-
 ## Repository layout
 
 ```
@@ -106,32 +97,17 @@ judge_training/
 
 ---
 
-## End-to-end pipeline
+## Usage
 
-The benchmark is built in five stages. Each stage corresponds to one or two
-modules in this repo; downstream stages consume artifacts that live in the
-companion dataset. Point `$DATASET_DIR` at wherever you downloaded the
-Hugging Face dataset before running the snippets below, e.g.:
+> The full five-stage pipeline (prompt curation → video generation →
+> VLM-as-judge evaluation → human annotation → judge LoRA training) is
+> documented in [`PIPELINE.md`](PIPELINE.md). The section below covers the
+> two stages most users will run themselves: generating videos for the
+> benchmark prompts, and scoring them.
 
-```bash
-export DATASET_DIR=/path/to/phyground-dataset
-```
+### Video generation
 
-### 1. Prompt curation
-
-```bash
-# Enhance prompts to make the expected physical phenomenon explicit.
-# Reads $DATASET_DIR/prompts/*.csv, calls Gemini, writes back enhanced prompts.
-python -m dataprocessing.refine.enhance_prompts_physics --dry_run
-python -m dataprocessing.refine.enhance_prompts_physics --dataset wmb
-```
-
-Requires Gemini API access (Vertex AI or AI Studio) — see
-`dataprocessing/common/gemini.py` for client config and CLI flags.
-
-### 2. Video generation
-
-Out of scope for this repo. Use any ti2v model on the curated prompt set;
+Use any ti2v model on the curated prompt set;
 the dataset card lists the eight models we ran (`wan2.2-ti2v-5b`,
 `ltx-2-19b-dev`, `cosmos-predict2.5-{2b,14b}`, `veo-3.1`,
 `wan2.2-i2v-a14b`, `omniweaving`, `ltx-2.3-22b-dev`).
@@ -144,17 +120,17 @@ and save the result as `videos/<video_id>.mp4`, where `<video_id>` matches
 the `video` field of the prompts JSON entry. The scorer pairs videos to
 prompts by that filename stem.
 
-### 3. VLM-as-judge evaluation
+### VLM-as-judge evaluation
 
 **Three commands to a scored JSON.**
 
 ```bash
-# 3a. Install the eval runner (one-stop extra: all backends + HF CLI).
+# 1. Install the eval runner (one-stop extra: all backends + HF CLI).
 pip install -e ".[eval]"
 # Plus a system-level ffmpeg if you'll use the local vLLM judge:
 #   apt-get install ffmpeg   /   brew install ffmpeg
 
-# 3b. Pull the benchmark prompts (250 entries) and first-frame images.
+# 2. Pull the benchmark prompts (250 entries) and first-frame images.
 huggingface-cli download --repo-type dataset \
     NU-World-Model-Embodied-AI/phyground \
     --include "prompts/phyground.json" "first_images/*" \
@@ -162,7 +138,7 @@ huggingface-cli download --repo-type dataset \
 #   → data/prompts/phyground.json
 #   → data/first_images/*.png
 
-# 3c. Score every videos/*.mp4 with the released phyjudge LoRA via vLLM.
+# 3. Score every videos/*.mp4 with the released phyjudge LoRA via vLLM.
 pip install "vllm>=0.6"
 bash scripts/score_videos.sh \
     --video_dir ./videos \
@@ -231,46 +207,13 @@ sub-questions. The released phyjudge LoRA was fine-tuned against
 `default.yaml`'s `training_prompts`, which is why `scripts/score_videos.sh`
 passes `--use_training_prompts` by default.
 
-### 4. Human annotation
-
-```bash
-pip install flask selenium
-python -m evals.human_eval.app          # serves on :5000
-```
-
-The Flask app implements the comparison-mode UI: each annotator rates a
-random group of 3 models side-by-side along the General dims and the
-prompt-specific physical laws. Assignments, sessions, and ratings live in
-`human_eval.db` (SQLite). Tests under `evals/human_eval/tests/` cover
-assignment, DB, import, and route logic and run with `pytest`.
-
-### 5. Judge LoRA training
-
-```bash
-# Build ms-swift SFT JSONL from raw judgement logs.
-python -m judge_training.data.build_swift_data convert \
-    --base_dir . --val-output train_val.jsonl --val-ratio 0.1
-python -m judge_training.data.build_swift_data validate train.jsonl
-
-# Or from Claude CoT eval JSONs:
-python -m judge_training.data.build_from_claude_cot convert \
-    --prompt-config cotnosubq.yaml \
-    --eval-dir data/scores/claude \
-    --pattern 'eval_claude_cot_*.json'
-```
-
-Train with [`ms-swift`](https://github.com/modelscope/ms-swift) +
-DeepSpeed ZeRO-2 against the produced JSONL — see the model card for the
-exact swift CLI invocation, hyperparameters, and base checkpoint
-(`Qwen/Qwen3.5-9B`).
-
 ---
 
 ## Quick start (judge inference only)
 
-If you just want to score videos with the released judge, jump to §3 of
-the pipeline above — `scripts/score_videos.sh` is the one-click runner.
-The transformers/peft path documented on the
+If you just want to score videos with the released judge, jump to the
+VLM-as-judge evaluation section above — `scripts/score_videos.sh` is the
+one-click runner. The transformers/peft path documented on the
 [model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B)
 remains supported for users who'd rather load the LoRA in-process instead
 of going through vLLM.
@@ -308,7 +251,7 @@ human ratings) and one of the released judges. The steps are:
 
 1. Pull the dataset from Hugging Face (link above) so that
    `data/{prompts/phyground.json,first_images/,annotations/}` exist
-   locally (see §3b).
+   locally (see the VLM-as-judge evaluation section).
 2. Run the judge of your choice on every (video, prompt-template) pair:
    `scripts/score_videos.sh` for the released LoRA, or
    `scripts/score_videos_api.sh` for a closed-source baseline. Vary
