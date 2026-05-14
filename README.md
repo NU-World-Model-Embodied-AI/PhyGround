@@ -5,6 +5,7 @@
 # Phyground — Code
 
 [![Slide](https://img.shields.io/badge/Slides-07C160?style=for-the-badge&logo=slides&logoColor=white)](assets/phyground-slides.pdf)
+[![Poster](https://img.shields.io/badge/Poster-1f6feb?style=for-the-badge&logo=readthedocs&logoColor=white)](assets/PhyGround-poster.pdf)
 [![Paper](https://img.shields.io/badge/Paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2605.10806)
 [![Hugging Face](https://img.shields.io/badge/dataset-fcd022?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground)
 
