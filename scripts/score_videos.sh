@@ -8,7 +8,8 @@
 #   PHYJUDGE_LORA  LoRA adapter HF id or local path
 #                   (default NU-World-Model-Embodied-AI/phyjudge-9B)
 #   PORT           vLLM port (default 29673)
-#   PROMPT_CONFIG  YAML template under evals/prompts/ (default default.yaml)
+#   PROMPT_CONFIG  YAML template under evals/prompts/ (default subq+human.yaml,
+#                  the template the released LoRA was trained on)
 #   PROMPTS_JSON   path to phyground.json (default data/prompts/phyground.json)
 #
 # CLI args (passed to evals.vlm_eval; --video_dir is the only required one):
@@ -27,7 +28,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 PORT="${PORT:-29673}"
-PROMPT_CONFIG="${PROMPT_CONFIG:-default.yaml}"
+PROMPT_CONFIG="${PROMPT_CONFIG:-subq+human.yaml}"
 PROMPTS_JSON="${PROMPTS_JSON:-data/prompts/phyground.json}"
 
 if [[ ! -f "${PROMPTS_JSON}" ]]; then
@@ -63,14 +64,16 @@ until curl -fs "http://localhost:${PORT}/health" > /dev/null 2>&1; do
 done
 echo "vLLM server ready."
 
-# --use_training_prompts is REQUIRED for the released LoRA: the adapter was
-# fine-tuned against training_prompts, and inference under eval_prompts will
-# produce miscalibrated scores. Override at your own risk.
+# The released LoRA was fine-tuned on subq+human.yaml (sub-question prompts
+# in, human scores out) to answer with bare JSON, so thinking is turned off
+# (--no-thinking), as in the paper's runs. Scoring it under another
+# PROMPT_CONFIG (e.g. default.yaml) produces miscalibrated scores. Override
+# at your own risk.
 cd "${REPO_ROOT}"
 python3 -m evals.vlm_eval \
     --backend qwen9b \
     --prompt_config "${PROMPT_CONFIG}" \
-    --use_training_prompts \
+    --no-thinking \
     --model phyjudge \
     --prompts_json "${PROMPTS_JSON}" \
     --api_base "http://localhost:${PORT}/v1" \

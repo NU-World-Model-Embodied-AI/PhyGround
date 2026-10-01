@@ -13,7 +13,8 @@
 #   GCP_LOCATION    default "global"
 #
 # Optional env vars:
-#   PROMPT_CONFIG   YAML template under evals/prompts/ (default default.yaml)
+#   PROMPT_CONFIG   YAML template under evals/prompts/ (default subq+human.yaml,
+#                   the paper's default +SubQ judge schema)
 #   PROMPTS_JSON    path to phyground.json (default data/prompts/phyground.json)
 #   JUDGE_MODEL     override model name (e.g. gemini-3.1-pro-preview,
 #                   gpt-5.4, claude-opus-4-7)
@@ -24,8 +25,8 @@
 #   --save_path PATH       where to write the final scores JSON
 #   --limit N              smoke-test mode
 #
-# Note: closed-source judges DO NOT need --use_training_prompts (that flag is
-# specific to the released LoRA). Eval-time prompts are used by default.
+# Note: the default subq+human.yaml is the same template the released LoRA
+# uses, so closed-source and phyjudge scores are directly comparable.
 #
 # Examples:
 #   # Gemini via AI Studio
@@ -45,7 +46,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 JUDGE_BACKEND="${JUDGE_BACKEND:-gemini}"
-PROMPT_CONFIG="${PROMPT_CONFIG:-default.yaml}"
+PROMPT_CONFIG="${PROMPT_CONFIG:-subq+human.yaml}"
 PROMPTS_JSON="${PROMPTS_JSON:-data/prompts/phyground.json}"
 
 if [[ ! -f "${PROMPTS_JSON}" ]]; then

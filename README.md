@@ -75,16 +75,20 @@ evals/
   physics_criteria.py  # 13 physical laws (EN + ZH) + human-eval rubric definitions
   sub_questions.py     # Per-law observational sub-questions for CoT / SubQ prompts
   prompts/             # 5 judge prompt templates + PromptConfig loader:
-                       #   default.yaml      — direct 1-5 score, JSON-only output
+                       #   subq+human.yaml   — sub-questions as a checklist, JSON-only
+                       #                       1-5 score (DEFAULT; phyjudge was
+                       #                       trained on it with human scores)
+                       #   default.yaml      — direct 1-5 score, no sub-questions
                        #   cotnosubq.yaml    — chain-of-thought, no sub-questions
                        #   cot-subq.yaml     — CoT + observational sub-questions
                        #   subq+answer.yaml  — sub-questions answered yes/no/uncertain
-                       #   subq+human.yaml   — human-style sub-questions
   human_eval/          # Flask app: assignment, rating UI, coverage reports,
                        # alignment checks, tests, templates, static assets
 
 scripts/
-  serve_judge.sh       # Launch phyjudge LoRA on a vLLM OpenAI-compatible server
+  serve_judge.sh       # Merge the phyjudge LoRA (once) and serve it on a
+                       # vLLM OpenAI-compatible server
+  merge_judge.py       # Merge a LoRA into its base checkpoint (used by serve_judge.sh)
   score_videos.sh      # One-click: serve_judge.sh + evals.vlm_eval (local LoRA path)
   score_videos_api.sh  # Same, but routes to Gemini / GPT / Claude cloud APIs
 
@@ -117,9 +121,9 @@ Each prompt in `prompts/phyground.json` ships with a corresponding first-
 frame conditioning image under
 [`first_images/`](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground/tree/main/first_images)
 on the HF dataset — feed `(text_prompt, first_image)` to your ti2v model
-and save the result as `videos/<video_id>.mp4`, where `<video_id>` matches
-the `video` field of the prompts JSON entry. The scorer pairs videos to
-prompts by that filename stem.
+and save the result as `videos/<id_stem>.mp4`, where `<id_stem>` is the
+`id_stem` field of the prompts JSON entry (e.g. `collision_156.mp4`). The
+scorer pairs videos to prompts by that filename stem.
 
 ### VLM-as-judge evaluation
 
@@ -140,19 +144,22 @@ huggingface-cli download --repo-type dataset \
 #   → data/first_images/*.png
 
 # 3. Score every videos/*.mp4 with the released phyjudge LoRA via vLLM.
-pip install "vllm>=0.6"
+pip install "vllm>=0.18"   # needs Qwen3.5 support; tested with 0.18.0
 bash scripts/score_videos.sh \
     --video_dir ./videos \
     --save_path ./scores.json
 ```
 
-The wrapper starts vLLM in the background (base `Qwen/Qwen3.5-9B` + LoRA
-adapter `NU-World-Model-Embodied-AI/phyjudge-9B`, as recorded in the
-[model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B)),
-waits for `/health`, runs `python -m evals.vlm_eval` against every
-`*.mp4` under `--video_dir`, and tears the server down on exit. Override
-the base or adapter with `PHYJUDGE_BASE=…` / `PHYJUDGE_LORA=…` if you've
-mirrored them locally.
+The wrapper merges the LoRA adapter `NU-World-Model-Embodied-AI/phyjudge-9B`
+into its base `Qwen/Qwen3.5-9B` (as recorded in the
+[model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B))
+on first run, caching the ~18 GB result under `~/.cache/phyjudge/`. vLLM
+cannot serve this adapter as a LoRA, and the paper's numbers come from a
+merged checkpoint. The wrapper then starts vLLM in the background, waits
+for `/health`, runs `python -m evals.vlm_eval` against every `*.mp4` under
+`--video_dir`, and tears the server down on exit. Override the base or
+adapter with `PHYJUDGE_BASE=…` / `PHYJUDGE_LORA=…` if you've mirrored them
+locally, and the cache location with `PHYJUDGE_MERGED=…`.
 
 `scores.json` schema:
 
@@ -204,9 +211,12 @@ passing it after the script name — see `python -m evals.vlm_eval --help`.
 The five prompt templates under `evals/prompts/` are A/B-comparable: they
 share the same scoring keys but differ in whether they elicit
 chain-of-thought reasoning and/or intermediate yes/no answers to per-law
-sub-questions. The released phyjudge LoRA was fine-tuned against
-`default.yaml`'s `training_prompts`, which is why `scripts/score_videos.sh`
-passes `--use_training_prompts` by default.
+sub-questions. Both scripts default to `subq+human.yaml`, the paper's
+default judge schema (+SubQ, no CoT) and the template the released
+phyjudge LoRA was fine-tuned on (sub-question prompts in, human scores
+out). Keep that default when scoring with phyjudge: the adapter was never
+trained on the other templates, so e.g. `default.yaml` produces
+miscalibrated scores.
 
 ---
 
@@ -255,19 +265,21 @@ human ratings) and one of the released judges. The steps are:
    locally (see the VLM-as-judge evaluation section).
 2. Run the judge of your choice on every (video, prompt-template) pair:
    `scripts/score_videos.sh` for the released LoRA, or
-   `scripts/score_videos_api.sh` for a closed-source baseline. Vary
-   `PROMPT_CONFIG=…` across `default.yaml`, `cotnosubq.yaml`,
-   `cot-subq.yaml`, `subq+answer.yaml`, `subq+human.yaml` to reproduce
-   the prompt-template ablations.
+   `scripts/score_videos_api.sh` for a closed-source baseline.
+   Both scripts default to `subq+human.yaml`, which is what the paper's
+   main judge tables use. To reproduce the prompt-template ablations,
+   vary `PROMPT_CONFIG=…` across `default.yaml`, `cotnosubq.yaml`,
+   `cot-subq.yaml`, `subq+answer.yaml` for the closed-source or base
+   judges.
 3. Aggregate per-model means and compute agreement against the human
    ratings in `data/annotations/annotator_*.json`.
 
-The released LoRA adapter targets the `default.yaml` template (and that
-template's `training_prompts` block — which is why
-`scripts/score_videos.sh` always passes `--use_training_prompts`).
-Chain-of-thought and sub-question variants exist for ablations and
-require re-running the relevant tables under a different
-`PROMPT_CONFIG`.
+The released LoRA adapter was fine-tuned on `subq+human.yaml` only
+(the same file ships on the
+[model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B)),
+so always score it with that template — `scripts/score_videos.sh` does
+this by default. The other templates are for the prompt-schema
+ablations on untuned judges.
 
 ---
 

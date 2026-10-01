@@ -12,16 +12,17 @@ Supported backends:
 
 Usage (local LoRA):
   python -m evals.vlm_eval \\
-      --backend qwen9b --prompt_config default.yaml --use_training_prompts \\
+      --backend qwen9b --model phyjudge --prompt_config subq+human.yaml --no-thinking \\
       --video_dir ./videos \\
       --prompts_json data/prompts/phyground.json \\
       --api_base http://localhost:29673/v1 \\
       --save_path ./scores.json
 
-`--use_training_prompts` is REQUIRED when scoring with the released LoRA —
-the adapter was fine-tuned against `training_prompts` and will produce
-miscalibrated scores under `eval_prompts`. Closed-source backends should
-omit it.
+The released phyjudge LoRA was fine-tuned on `subq+human.yaml` (sub-question
+prompts as input, human scores as targets), which is also the paper's
+default judge schema for every backend. Scoring the LoRA with any other
+template (e.g. `default.yaml`) produces miscalibrated scores. The LoRA
+answers with bare JSON, so pass `--no-thinking` (Qwen3.5 thinks by default).
 """
 
 from __future__ import annotations
@@ -66,10 +67,14 @@ def load_video_prompt_mapping(prompts_json: str) -> dict[str, PromptEntry]:
 
     mapping: dict[str, PromptEntry] = {}
 
-    if "prompts" not in data:
+    # The released prompts/phyground.json is a top-level list; older internal
+    # files wrap the entries as {"prompts": [...] | {...}}.
+    if isinstance(data, list):
+        raw_prompts = data
+    elif isinstance(data, dict) and "prompts" in data:
+        raw_prompts = data["prompts"]
+    else:
         return mapping
-
-    raw_prompts = data["prompts"]
     items = raw_prompts.items() if isinstance(raw_prompts, dict) else enumerate(raw_prompts)
 
     for key, raw in items:
@@ -344,12 +349,15 @@ def main():
         help="qwen9b/qwen27b = local vLLM; gemini/gpt/claude = cloud APIs.",
     )
     parser.add_argument(
-        "--prompt_config", type=str, default="default.yaml",
-        help="YAML prompt config under evals/prompts/ (default: default.yaml)",
+        "--prompt_config", type=str, default="subq+human.yaml",
+        help="YAML prompt config under evals/prompts/ (default: subq+human.yaml, "
+             "the template the released phyjudge LoRA was trained on).",
     )
     parser.add_argument(
         "--use_training_prompts", action="store_true",
-        help="REQUIRED for the released phyjudge LoRA — it was fine-tuned with training_prompts.",
+        help="Use the config's training_prompts block instead of eval_prompts for the "
+             "general dims (falls back to eval_prompts when the block is absent, as in "
+             "subq+human.yaml). Not needed for the released phyjudge LoRA.",
     )
     parser.add_argument("--video_dir", type=str, required=True, help="Directory of .mp4 files to score.")
     parser.add_argument(

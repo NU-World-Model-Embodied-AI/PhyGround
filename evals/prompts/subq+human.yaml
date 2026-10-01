@@ -1,6 +1,8 @@
 scheme: subq_hint
 description: |-
-  JSON-only per-task prompts with observable sub-questions/checklists.subq+ human 其实是用 human 分数训练.输入就是 subq .输出人类分数.
+  JSON-only per-task prompts with observable sub-questions/checklists. The
+  subq+human setting uses sub-question prompts as input and human scores as
+  training targets.
 sub_questions:
   source: static
   answer_format: hint
