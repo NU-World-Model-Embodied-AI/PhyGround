@@ -32,9 +32,9 @@ Each prompt in `prompts/phyground.json` ships with a corresponding first-
 frame conditioning image under
 [`first_images/`](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground/tree/main/first_images)
 on the HF dataset — feed `(text_prompt, first_image)` to your ti2v model
-and save the result as `videos/<video_id>.mp4`, where `<video_id>` matches
-the `video` field of the prompts JSON entry. The scorer pairs videos to
-prompts by that filename stem.
+and save the result as `videos/<id_stem>.mp4`, where `<id_stem>` is the
+`id_stem` field of the prompts JSON entry (e.g. `collision_156.mp4`). The
+scorer pairs videos to prompts by that filename stem.
 
 ## 3. VLM-as-judge evaluation
 
@@ -55,19 +55,22 @@ huggingface-cli download --repo-type dataset \
 #   → data/first_images/*.png
 
 # 3c. Score every videos/*.mp4 with the released phyjudge LoRA via vLLM.
-pip install "vllm>=0.6"
+pip install "vllm>=0.18"   # needs Qwen3.5 support; tested with 0.18.0
 bash scripts/score_videos.sh \
     --video_dir ./videos \
     --save_path ./scores.json
 ```
 
-The wrapper starts vLLM in the background (base `Qwen/Qwen3.5-9B` + LoRA
-adapter `NU-World-Model-Embodied-AI/phyjudge-9B`, as recorded in the
-[model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B)),
-waits for `/health`, runs `python -m evals.vlm_eval` against every
-`*.mp4` under `--video_dir`, and tears the server down on exit. Override
-the base or adapter with `PHYJUDGE_BASE=…` / `PHYJUDGE_LORA=…` if you've
-mirrored them locally.
+The wrapper merges the LoRA adapter `NU-World-Model-Embodied-AI/phyjudge-9B`
+into its base `Qwen/Qwen3.5-9B` (as recorded in the
+[model card](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B))
+on first run, caching the ~18 GB result under `~/.cache/phyjudge/`. vLLM
+cannot serve this adapter as a LoRA, and the paper's numbers come from a
+merged checkpoint. The wrapper then starts vLLM in the background, waits
+for `/health`, runs `python -m evals.vlm_eval` against every `*.mp4` under
+`--video_dir`, and tears the server down on exit. Override the base or
+adapter with `PHYJUDGE_BASE=…` / `PHYJUDGE_LORA=…` if you've mirrored them
+locally, and the cache location with `PHYJUDGE_MERGED=…`.
 
 `scores.json` schema:
 
@@ -119,9 +122,12 @@ passing it after the script name — see `python -m evals.vlm_eval --help`.
 The five prompt templates under `evals/prompts/` are A/B-comparable: they
 share the same scoring keys but differ in whether they elicit
 chain-of-thought reasoning and/or intermediate yes/no answers to per-law
-sub-questions. The released phyjudge LoRA was fine-tuned against
-`default.yaml`'s `training_prompts`, which is why `scripts/score_videos.sh`
-passes `--use_training_prompts` by default.
+sub-questions. Both scripts default to `subq+human.yaml`, the paper's
+default judge schema (+SubQ, no CoT) and the template the released
+phyjudge LoRA was fine-tuned on (sub-question prompts in, human scores
+out). Keep that default when scoring with phyjudge: the adapter was never
+trained on the other templates, so e.g. `default.yaml` produces
+miscalibrated scores.
 
 ## 4. Human annotation
 

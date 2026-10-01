@@ -64,7 +64,8 @@ def parse_prompt_entry(raw: dict, *, key: str = "") -> PromptEntry | None:
             domain=str(domain),
             first_frame_image=str(raw.get("first_frame_image") or ""),
             dataset=str(raw.get("dataset") or ""),
-            video=str(raw.get("video") or ""),
+            # Released phyground.json names the video stem `id_stem`.
+            video=str(raw.get("video") or raw.get("id_stem") or ""),
         )
     except (ValueError, TypeError) as e:
         logger.warning("Skipping entry %r: %s", key, e)
