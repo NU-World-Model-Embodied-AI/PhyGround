@@ -83,7 +83,8 @@ evals/
                        #   cot-subq.yaml     — CoT + observational sub-questions
                        #   subq+answer.yaml  — sub-questions answered yes/no/uncertain
   human_eval/          # Flask app: assignment, rating UI, coverage reports,
-                       # alignment checks, tests, templates, static assets
+                       # alignment checks, tests, templates, static assets,
+                       # UI screenshots + capture_screenshots.py
 
 scripts/
   serve_judge.sh       # Merge the phyjudge LoRA (once) and serve it on a

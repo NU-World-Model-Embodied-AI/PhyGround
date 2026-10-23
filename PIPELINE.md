@@ -133,7 +133,8 @@ miscalibrated scores.
 
 ```bash
 pip install flask selenium
-python -m evals.human_eval.app          # serves on :5000
+cd evals
+python -m flask --app human_eval.app:create_app run --port 5000
 ```
 
 The Flask app implements the comparison-mode UI: each annotator rates a
@@ -141,6 +142,11 @@ random group of 3 models side-by-side along the General dims and the
 prompt-specific physical laws. Assignments, sessions, and ratings live in
 `human_eval.db` (SQLite). Tests under `evals/human_eval/tests/` cover
 assignment, DB, import, and route logic and run with `pytest`.
+
+`evals/human_eval/screenshots/` shows every page of the UI (login, scoring
+guide and demo in EN/ZH, demographics, a rating group, completion). With the
+app running, `python -m human_eval.capture_screenshots --base-url
+http://127.0.0.1:5000` (from `evals/`, needs Firefox) re-renders them.
 
 ## 5. Judge LoRA training
 
