@@ -299,3 +299,13 @@ Paper: [arXiv:2605.10806](https://arxiv.org/abs/2605.10806)
       url={https://arxiv.org/abs/2605.10806},
 }
 ```
+
+---
+
+## License
+
+The code in this repository is released under the [Apache License 2.0](LICENSE).
+The [PhyGround dataset](https://huggingface.co/datasets/NU-World-Model-Embodied-AI/phyground)
+is released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), and the
+[PhyJudge-9B adapter](https://huggingface.co/NU-World-Model-Embodied-AI/phyjudge-9B)
+under Apache-2.0, the same license as its base model Qwen3.5-9B.

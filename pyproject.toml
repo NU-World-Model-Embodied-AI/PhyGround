@@ -7,7 +7,7 @@ name = "phyground"
 version = "0.1.0"
 description = "Phyground — a benchmark for physical plausibility of text+image-to-video generations"
 readme = "README.md"
-license = { text = "CC-BY-4.0" }
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = [
     "pyyaml",
